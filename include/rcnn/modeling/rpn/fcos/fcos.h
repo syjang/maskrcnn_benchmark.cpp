@@ -9,31 +9,75 @@
 #include "rpn/anchor_generator.h"
 #include "rpn/fcos/loss.h"
 #include "rpn/fcos/inference.h"
+#include "scale.h"
 
 namespace rcnn
 {
 namespace modeling
 {
 
-class FCOSHead : public torch::nn::Module
+// class Scale;
+class FCOSHeadImpl : public torch::nn::Module
 {
 public:
-    FCOSHead(int64_t in_channels);
-    std::pair<std::vector<torch::Tensor>, std::vector<torch::Tensor>> forward(std::vector<torch::Tensor> &x);
+    FCOSHeadImpl(int64_t in_channels);
+    std::tuple<std::vector<torch::Tensor>, std::vector<torch::Tensor>, std::vector<torch::Tensor>> forward(std::vector<torch::Tensor> &x);
 
 private:
-};
+    torch::nn::Conv2d cls_logits;
+    torch::nn::Conv2d bbox_pred;
+    torch::nn::Conv2d centerness;
+    torch::nn::Sequential cls_tower;
+    torch::nn::Sequential bbox_tower;
 
-class FCOSModule : public torch::nn::Module
+    std::vector<layers::Scale> scales;
+};
+TORCH_MODULE(FCOSHead);
+
+class FCOSModuleImpl : public torch::nn::Module
 {
 public:
-    FCOSModule(int64_t in_channels);
-    std::pair<std::vector<rcnn::structures::BoxList>, std::map<std::string, torch::Tensor>> forward(rcnn::structures::ImageList &images, std::vector<torch::Tensor> &features, std::vector<rcnn::structures::BoxList> targets);
-    std::pair<std::vector<rcnn::structures::BoxList>, std::map<std::string, torch::Tensor>> forward(rcnn::structures::ImageList &images, std::vector<torch::Tensor> &features);
+    FCOSModuleImpl(int64_t in_channels);
+    //for train
+    std::pair<std::vector<rcnn::structures::BoxList>, std::map<std::string, torch::Tensor>>
+    forward(rcnn::structures::ImageList &images, std::vector<torch::Tensor> &features, std::vector<rcnn::structures::BoxList> targets);
+
+    //for inference and testing
+    std::pair<std::vector<rcnn::structures::BoxList>, std::map<std::string, torch::Tensor>>
+    forward(rcnn::structures::ImageList &images, std::vector<torch::Tensor> &features);
 
 private:
-    FCOSHead head;
+    std::vector<torch::Tensor>
+    compute_locations(std::vector<torch::Tensor> &features);
+
+    torch::Tensor
+    compute_locations_per_level(int64_t h, int64_t w, int stride, torch::Device device);
+
+    std::pair<std::vector<rcnn::structures::BoxList>, std::map<std::string, torch::Tensor>>
+    _forward_test(const std::vector<torch::Tensor> &locations,
+                  const std::vector<torch::Tensor> &box_cls,
+                  const std::vector<torch::Tensor> &box_regression,
+                  const std::vector<torch::Tensor> &centerness,
+                  const std::vector<std::pair<int64_t, int64_t>> &image_sizes);
+
+    std::pair<std::vector<rcnn::structures::BoxList>, std::map<std::string, torch::Tensor>>
+    _forward_train(const std::vector<torch::Tensor> &locations,
+                   const std::vector<torch::Tensor> &box_cls,
+                   const std::vector<torch::Tensor> &box_regression,
+                   const std::vector<torch::Tensor> &centerness,
+                   const std::vector<rcnn::structures::BoxList> &targets);
+
+private:
+    FCOSHeadImpl head;
+    FCOSPostProcessor box_selector_test;
+
+    //todo make loss
+    //loss_evaluator
+    std::vector<int> fpn_strides;
+
+    bool isTrain = false;
 };
+TORCH_MODULE(FCOSModule);
 
 } // namespace modeling
 } // namespace rcnn

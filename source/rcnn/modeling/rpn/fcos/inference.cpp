@@ -15,11 +15,11 @@ FCOSPostProcessorImpl::FCOSPostProcessorImpl(float pre_nms_thresh, int pre_nms_t
 {
 }
 
-std::vector<structures::BoxList> FCOSPostProcessorImpl::forward(std::vector<torch::Tensor> &locations,
-                                                                std::vector<torch::Tensor> &box_cls,
-                                                                std::vector<torch::Tensor> &box_regression,
-                                                                std::vector<torch::Tensor> &centerness,
-                                                                std::vector<std::pair<int64_t, int64_t>> image_sizes)
+std::vector<structures::BoxList> FCOSPostProcessorImpl::forward(const std::vector<torch::Tensor> &locations,
+                                                                const std::vector<torch::Tensor> &box_cls,
+                                                                const std::vector<torch::Tensor> &box_regression,
+                                                                const std::vector<torch::Tensor> &centerness,
+                                                                const std::vector<std::pair<int64_t, int64_t>> &image_sizes)
 {
     using namespace structures;
     std::vector<std::vector<BoxList>> sampled_boxes;

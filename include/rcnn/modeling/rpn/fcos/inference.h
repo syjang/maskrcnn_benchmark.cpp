@@ -15,11 +15,11 @@ public:
                           float nms_thresh, int fpn_post_num_top_n, int min_size,
                           int num_classes);
 
-    std::vector<structures::BoxList> forward(std::vector<torch::Tensor> &locations,
-                                             std::vector<torch::Tensor> &box_cls,
-                                             std::vector<torch::Tensor> &box_regression,
-                                             std::vector<torch::Tensor> &centerness,
-                                             std::vector<std::pair<int64_t, int64_t>> image_sizes);
+    std::vector<structures::BoxList> forward(const std::vector<torch::Tensor> &locations,
+                                             const std::vector<torch::Tensor> &box_cls,
+                                             const std::vector<torch::Tensor> &box_regression,
+                                             const std::vector<torch::Tensor> &centerness,
+                                             const std::vector<std::pair<int64_t, int64_t>> &image_sizes);
 
 private:
     std::vector<structures::BoxList> forward_for_single_feature_map(torch::Tensor &locations,
