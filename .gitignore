@@ -54,3 +54,4 @@ build/
 
 *.pth
 datasets/*
+clang-format
