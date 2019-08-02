@@ -4,7 +4,7 @@ namespace rcnn
 {
 namespace layers
 {
-torch::Tensor IOULoss::forward(torch::Tensor pred, torch::Tensor target, torch::Tensor weight)
+torch::Tensor IOULossImpl::forward(torch::Tensor pred, torch::Tensor target, torch::Tensor weight)
 {
     return torch::Tensor();
 }

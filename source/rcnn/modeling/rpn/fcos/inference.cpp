@@ -134,9 +134,7 @@ std::vector<structures::BoxList> FCOSPostProcessorImpl::select_over_all_levels(c
             boxlist_for_class.AddField("scores", scores_j);
             boxlist_for_class = boxlist_for_class.nms(nms_thresh);
             auto num_labels = boxlist_for_class.Length();
-            torch::TensorOptions options;
-            options.dtype = torch::kInt64;
-            options.device = scores.get_device();
+            torch::TensorOptions options = torch::TensorOptions().dtype(torch::kInt64).device_index(scores.get_device());
             //todo : check ```num_labels,```
             boxlist_for_class.AddField("labels", torch::full({
                                                                  num_labels,

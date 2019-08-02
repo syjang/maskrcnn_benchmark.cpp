@@ -1,5 +1,3 @@
-
-
 #include "rpn/fcos/fcos.h"
 #include "rpn/utils.h"
 #include "defaults.h"
@@ -18,12 +16,12 @@ FCOSHeadImpl::FCOSHeadImpl(int64_t in_channels)
 
     for (int i = 0; i < num_convs; ++i)
     {
-        cls_tower->push_back(std::make_shared<torch::nn::Module>(torch::nn::Conv2d(torch::nn::Conv2dOptions(in_channels, in_channels, 3).padding(1).stride(1))));
-        cls_tower->push_back(torch::nn::Functional(torch::group_norm, 32, in_channels));
+        cls_tower->push_back(torch::nn::Conv2d(torch::nn::Conv2dOptions(in_channels, in_channels, 3).padding(1).stride(1)));
+        cls_tower->push_back(torch::nn::Functional(torch::group_norm, 32, torch::ones({in_channels}), torch::ones({in_channels}), 1e-5, true));
         cls_tower->push_back(torch::nn::Functional(torch::relu));
 
-        bbox_tower->push_back(std::make_shared<torch::nn::Module>(torch::nn::Conv2d(torch::nn::Conv2dOptions(in_channels, in_channels, 3).padding(1).stride(1))));
-        bbox_tower->push_back(torch::nn::Functional(torch::group_norm, 32, in_channels));
+        bbox_tower->push_back(torch::nn::Conv2d(torch::nn::Conv2dOptions(in_channels, in_channels, 3).padding(1).stride(1)));
+        bbox_tower->push_back(torch::nn::Functional(torch::group_norm, 32, torch::ones({in_channels}), torch::ones({in_channels}), 1e-5, true));
         bbox_tower->push_back(torch::nn::Functional(torch::relu));
     }
 
@@ -40,7 +38,7 @@ FCOSHeadImpl::FCOSHeadImpl(int64_t in_channels)
         auto modules = m->modules();
         for (auto md : modules)
         {
-            auto cv2 = std::dynamic_pointer_cast<torch::nn::Conv2d>(md);
+            auto cv2 = std::dynamic_pointer_cast<torch::nn::Conv2dImpl>(md);
             if (cv2 != nullptr)
             {
                 torch::nn::init::normal_(cv2->weight, 0, 0.01);
@@ -54,7 +52,7 @@ FCOSHeadImpl::FCOSHeadImpl(int64_t in_channels)
         auto modules = m->modules();
         for (auto md : modules)
         {
-            auto cv2 = std::dynamic_pointer_cast<torch::nn::Conv2d>(md);
+            auto cv2 = std::dynamic_pointer_cast<torch::nn::Conv2dImpl>(md);
             if (cv2 != nullptr)
             {
                 torch::nn::init::normal_(cv2->weight, 0, 0.01);
@@ -65,7 +63,7 @@ FCOSHeadImpl::FCOSHeadImpl(int64_t in_channels)
 
     auto prior_prob = rcnn::config::GetCFG<int>({"MODEL", "FCOS", "PRIOR_PROB"}); // cfg.MODEL.FCOS.PRIOR_PROB
     auto bias_value = -log((1 - prior_prob) / prior_prob);
-    torch::nn::init::constant_(cls_logits.bias, bias_value);
+    torch::nn::init::constant_(cls_logits->bias, bias_value);
     for (int i = 0; i < 5; i++)
         this->scales.push_back(layers::Scale(1.0));
 }
@@ -89,7 +87,7 @@ std::tuple<std::vector<torch::Tensor>, std::vector<torch::Tensor>, std::vector<t
 
 FCOSModuleImpl::FCOSModuleImpl(int64_t in_channels)
 {
-    head = FCOSHeadImpl(in_channels);
+    head = FCOSHead(in_channels);
 
     auto pre_nms_thresh = rcnn::config::GetCFG<float>({"MODEL", "FCOS", "INFERENCE_TH"});         //config.MODEL.FCOS.INFERENCE_TH
     auto pre_nms_top_n = rcnn::config::GetCFG<int>({"MODEL", "FCOS", "PRE_NMS_TOP_N"});           //config.MODEL.FCOS.PRE_NMS_TOP_N
@@ -110,7 +108,7 @@ FCOSModuleImpl::forward(rcnn::structures::ImageList &images, std::vector<torch::
     std::vector<torch::Tensor> box_regression;
     std::vector<torch::Tensor> centerness;
 
-    std::tie(box_cls, box_regression, centerness) = head.forward(features);
+    std::tie(box_cls, box_regression, centerness) = head->forward(features);
     auto locations = compute_locations(features);
     return this->_forward_test(locations, box_cls, box_regression, centerness, images.get_image_sizes());
 }
@@ -122,7 +120,7 @@ FCOSModuleImpl::forward(rcnn::structures::ImageList &images, std::vector<torch::
     std::vector<torch::Tensor> box_regression;
     std::vector<torch::Tensor> centerness;
 
-    std::tie(box_cls, box_regression, centerness) = head.forward(features);
+    std::tie(box_cls, box_regression, centerness) = head->forward(features);
     auto locations = compute_locations(features);
     return this->_forward_train(locations, box_cls, box_regression, centerness, targets);
 }
@@ -137,7 +135,7 @@ std::vector<torch::Tensor> FCOSModuleImpl::compute_locations(std::vector<torch::
         int w = feature.size(-1);
         auto locations_per_level = this->compute_locations_per_level(
             h, w, this->fpn_strides[level],
-            feature.device);
+            feature.device());
         locations.push_back(locations_per_level);
     }
     return locations;
@@ -146,9 +144,7 @@ std::vector<torch::Tensor> FCOSModuleImpl::compute_locations(std::vector<torch::
 torch::Tensor
 compute_locations_per_level(int64_t h, int64_t w, int stride, torch::Device device)
 {
-    auto op1 = torch::TensorOptions();
-    op1.dtype = torch::kFloat32;
-    op1.device = device;
+    auto op1 = torch::TensorOptions().dtype(torch::kFloat32).device(device);
     auto shifts_x = torch::arange(0, w * stride, stride, op1);
     auto shifts_y = torch::arange(0, h * stride, stride, op1);
     torch::Tensor shift_y, shift_x;
@@ -171,7 +167,7 @@ FCOSModuleImpl::_forward_test(const std::vector<torch::Tensor> &locations,
 {
 
     auto t = box_selector_test->forward(locations, box_cls, box_regression, centerness, image_sizes);
-    return std::pair(t, std::map<std::string, torch::Tensor>{});
+    return std::make_pair(t, std::map<std::string, torch::Tensor>());
 }
 
 std::pair<std::vector<rcnn::structures::BoxList>, std::map<std::string, torch::Tensor>>
@@ -181,6 +177,7 @@ _forward_train(const std::vector<torch::Tensor> &locations,
                const std::vector<torch::Tensor> &centerness,
                const std::vector<rcnn::structures::BoxList> &targets)
 {
+    return std::make_pair(std::vector<rcnn::structures::BoxList>(), std::map<std::string, torch::Tensor>());
 }
 
 } // namespace modeling

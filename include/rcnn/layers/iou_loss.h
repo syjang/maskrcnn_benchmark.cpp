@@ -7,14 +7,16 @@
 #include "cuda/vision_cuda.h"
 #endif
 
+//TODO : make class
 namespace rcnn
 {
 namespace layers
 {
-class IOULoss : public torch::nn::Module
+class IOULossImpl : public torch::nn::Module
 {
 public:
     torch::Tensor forward(torch::Tensor pred, torch::Tensor target, torch::Tensor weight);
 };
+TORCH_MODULE(IOULoss);
 } // namespace layers
 } // namespace rcnn
