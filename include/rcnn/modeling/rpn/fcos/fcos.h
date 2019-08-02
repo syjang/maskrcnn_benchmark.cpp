@@ -26,8 +26,8 @@ private:
     torch::nn::Conv2d cls_logits = nullptr;
     torch::nn::Conv2d bbox_pred = nullptr;
     torch::nn::Conv2d centerness = nullptr;
-    torch::nn::Sequential cls_tower = nullptr;
-    torch::nn::Sequential bbox_tower = nullptr;
+    torch::nn::Sequential cls_tower;
+    torch::nn::Sequential bbox_tower;
 
     std::vector<layers::Scale> scales;
 };
@@ -72,7 +72,7 @@ private:
 
     //todo make loss
     //loss_evaluator
-    std::vector<int> fpn_strides;
+    std::vector<int64_t> fpn_strides;
 
     bool isTrain = false;
 };

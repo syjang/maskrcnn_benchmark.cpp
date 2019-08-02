@@ -61,7 +61,7 @@ FCOSHeadImpl::FCOSHeadImpl(int64_t in_channels)
         }
     }
 
-    auto prior_prob = rcnn::config::GetCFG<int>({"MODEL", "FCOS", "PRIOR_PROB"}); // cfg.MODEL.FCOS.PRIOR_PROB
+    auto prior_prob = rcnn::config::GetCFG<float>({"MODEL", "FCOS", "PRIOR_PROB"}); // cfg.MODEL.FCOS.PRIOR_PROB
     auto bias_value = -log((1 - prior_prob) / prior_prob);
     torch::nn::init::constant_(cls_logits->bias, bias_value);
     for (int i = 0; i < 5; i++)
@@ -98,7 +98,7 @@ FCOSModuleImpl::FCOSModuleImpl(int64_t in_channels)
     box_selector_test = MakeFCOSPostprocessor(pre_nms_thresh, pre_nms_top_n, nms_thresh, fpn_post_nms_top_n, 0, numclass);
 
     //loss_evaluator = make_fcos_loss_evaluator(cfg)
-    fpn_strides = rcnn::config::GetCFG<std::vector<int>>({"MODEL", "FCOS", "FPN_STRIDES"});
+    fpn_strides = rcnn::config::GetCFG<std::vector<int64_t>>({"MODEL", "FCOS", "FPN_STRIDES"});
 }
 
 std::pair<std::vector<rcnn::structures::BoxList>, std::map<std::string, torch::Tensor>>
@@ -142,7 +142,7 @@ std::vector<torch::Tensor> FCOSModuleImpl::compute_locations(std::vector<torch::
 }
 
 torch::Tensor
-compute_locations_per_level(int64_t h, int64_t w, int stride, torch::Device device)
+FCOSModuleImpl::compute_locations_per_level(int64_t h, int64_t w, int stride, torch::Device device)
 {
     auto op1 = torch::TensorOptions().dtype(torch::kFloat32).device(device);
     auto shifts_x = torch::arange(0, w * stride, stride, op1);
@@ -171,11 +171,11 @@ FCOSModuleImpl::_forward_test(const std::vector<torch::Tensor> &locations,
 }
 
 std::pair<std::vector<rcnn::structures::BoxList>, std::map<std::string, torch::Tensor>>
-_forward_train(const std::vector<torch::Tensor> &locations,
-               const std::vector<torch::Tensor> &box_cls,
-               const std::vector<torch::Tensor> &box_regression,
-               const std::vector<torch::Tensor> &centerness,
-               const std::vector<rcnn::structures::BoxList> &targets)
+FCOSModuleImpl::_forward_train(const std::vector<torch::Tensor> &locations,
+                               const std::vector<torch::Tensor> &box_cls,
+                               const std::vector<torch::Tensor> &box_regression,
+                               const std::vector<torch::Tensor> &centerness,
+                               const std::vector<rcnn::structures::BoxList> &targets)
 {
     return std::make_pair(std::vector<rcnn::structures::BoxList>(), std::map<std::string, torch::Tensor>());
 }

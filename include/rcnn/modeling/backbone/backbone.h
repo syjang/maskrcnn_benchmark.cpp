@@ -1,11 +1,13 @@
 #pragma once
 #include <torch/torch.h>
 
+namespace rcnn
+{
+namespace modeling
+{
 
-namespace rcnn{
-namespace modeling{
-
-class BackboneImpl : public torch::nn::Module{
+class BackboneImpl : public torch::nn::Module
+{
 
 public:
   explicit BackboneImpl(torch::nn::Sequential backbone, int64_t out_channels);
@@ -24,6 +26,7 @@ Backbone BuildResnetBackbone();
 Backbone BuildResnetFPNBackbone();
 Backbone BuildBackbone();
 Backbone BuildVoVNetFPNBackbone();
+Backbone BuildResnetFpn_p3p7_backbone();
 
-}
-}
+} // namespace modeling
+} // namespace rcnn

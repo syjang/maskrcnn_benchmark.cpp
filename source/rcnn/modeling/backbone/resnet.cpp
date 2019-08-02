@@ -334,6 +334,12 @@ std::vector<rcnn::modeling::ResNetImpl::StageSpec> STAGE_SPECS(std::string name)
       rcnn::modeling::ResNetImpl::StageSpec(2, 8, true),
       rcnn::modeling::ResNetImpl::StageSpec(3, 36, true),
       rcnn::modeling::ResNetImpl::StageSpec(4, 3, true)
+    }},
+    {"R-50-FPN-RETINANET", std::vector<rcnn::modeling::ResNetImpl::StageSpec>{
+       rcnn::modeling::ResNetImpl::StageSpec(1, 3, true),
+      rcnn::modeling::ResNetImpl::StageSpec(2, 4, true),
+      rcnn::modeling::ResNetImpl::StageSpec(3, 6, true),
+      rcnn::modeling::ResNetImpl::StageSpec(4, 3, true)
     }}
   };
   assert(_STAGE_SPECS.count(name));

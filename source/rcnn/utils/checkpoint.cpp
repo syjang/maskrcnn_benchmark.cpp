@@ -21,7 +21,12 @@ void Checkpoint::load(rcnn::modeling::GeneralizedRCNN& model, std::string save_d
     model->load(archive);
   }
   else{
-    bool checker = true;
+    torch::serialize::InputArchive archive;
+    archive.load_from(weight_dir);
+    model->load(archive);
+
+
+    bool checker = true;    
     auto module = torch::jit::load(weight_dir);
     std::cout << "Load weight into memory\n";
     std::vector<std::string> names_in_pth;
