@@ -16,7 +16,6 @@ namespace rcnn
 namespace modeling
 {
 
-// class Scale;
 class FCOSHeadImpl : public torch::nn::Module
 {
 public:
@@ -24,11 +23,11 @@ public:
     std::tuple<std::vector<torch::Tensor>, std::vector<torch::Tensor>, std::vector<torch::Tensor>> forward(std::vector<torch::Tensor> &x);
 
 private:
-    torch::nn::Conv2d cls_logits;
-    torch::nn::Conv2d bbox_pred;
-    torch::nn::Conv2d centerness;
-    torch::nn::Sequential cls_tower;
-    torch::nn::Sequential bbox_tower;
+    torch::nn::Conv2d cls_logits = nullptr;
+    torch::nn::Conv2d bbox_pred = nullptr;
+    torch::nn::Conv2d centerness = nullptr;
+    torch::nn::Sequential cls_tower = nullptr;
+    torch::nn::Sequential bbox_tower = nullptr;
 
     std::vector<layers::Scale> scales;
 };
@@ -68,8 +67,8 @@ private:
                    const std::vector<rcnn::structures::BoxList> &targets);
 
 private:
-    FCOSHeadImpl head;
-    FCOSPostProcessor box_selector_test;
+    FCOSHead head = nullptr;
+    FCOSPostProcessor box_selector_test = nullptr;
 
     //todo make loss
     //loss_evaluator
